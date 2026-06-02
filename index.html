@@ -229,6 +229,10 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
     <div id="q-zh" class="q-zh" style="display:none"></div>
     <div id="q-sub" class="q-sub" style="display:none"></div>
     <div id="q-sentence" class="q-sentence" style="display:none"></div>
+    <!-- 顯示中文按鈕（例句填空用） -->
+    <button class="audio-btn" id="show-zh-btn" style="display:none;margin-top:8px;background:rgba(255,214,10,0.12);border-color:rgba(255,214,10,0.3);color:var(--gold)">
+      👁 顯示中文
+    </button>
     <!-- 音檔播放按鈕 -->
     <button class="audio-btn" id="audio-play-btn" style="display:none" onclick="playAudio('word')">
       🔊 播放單字音檔
@@ -236,13 +240,28 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
   </div>
 
   <!-- 例句播放按鈕（答題後顯示） -->
-  <div id="sentence-audio-wrap" style="display:none; text-align:center; margin-bottom:12px;">
-    <button class="audio-btn" id="audio-s1-btn" style="display:none" onclick="playAudio('s1')">
-      🔊 播放例句 1
-    </button>
-    <button class="audio-btn" id="audio-s2-btn" style="display:none; margin-left:8px" onclick="playAudio('s2')">
-      🔊 播放例句 2
-    </button>
+  <div id="sentence-audio-wrap" style="display:none; margin-bottom:12px;">
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:6px">
+      <button class="audio-btn" id="audio-s1-btn" style="display:none" onclick="playAudio('s1')">
+        🔊 播放例句 1
+      </button>
+      <button class="audio-btn" id="audio-s2-btn" style="display:none" onclick="playAudio('s2')">
+        🔊 播放例句 2
+      </button>
+    </div>
+    <!-- 例句中文顯示區 -->
+    <div id="s1-zh-row" style="display:none;text-align:center">
+      <button class="audio-btn" id="show-s1-zh-btn" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px" onclick="toggleSentenceZh('s1')">
+        👁 看例句 1 中文
+      </button>
+      <div id="s1-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:6px;padding:0 16px;line-height:1.6"></div>
+    </div>
+    <div id="s2-zh-row" style="display:none;text-align:center;margin-top:6px">
+      <button class="audio-btn" id="show-s2-zh-btn" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px" onclick="toggleSentenceZh('s2')">
+        👁 看例句 2 中文
+      </button>
+      <div id="s2-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:6px;padding:0 16px;line-height:1.6"></div>
+    </div>
   </div>
 
   <!-- 答對後顯示單字資訊 -->
@@ -561,9 +580,12 @@ function renderQ(){
   document.getElementById('q-sub').style.display='none';
   document.getElementById('q-sentence').style.display='none';
   document.getElementById('audio-play-btn').style.display='none';
+  document.getElementById('show-zh-btn').style.display='none';
   document.getElementById('sentence-audio-wrap').style.display='none';
   document.getElementById('audio-s1-btn').style.display='none';
   document.getElementById('audio-s2-btn').style.display='none';
+  document.getElementById('s1-zh-row').style.display='none';
+  document.getElementById('s2-zh-row').style.display='none';
   document.getElementById('word-info').className='word-info';
   document.getElementById('tip-box').className='tip-box';
   const spellInput=document.getElementById('spell-input');
@@ -604,12 +626,17 @@ function renderQ(){
     const re=new RegExp(q.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
     const blanked=sentence.replace(re,`<span class="q-blank">___</span>`);
     qSentence.innerHTML=blanked;qSentence.style.display='block';
-    if(q.s1_zh){qSub.textContent=q.s1_zh;qSub.style.display='block';}
+    // 中文預設隱藏，按鈕顯示
+    if(q.s1_zh){
+      qSub.textContent=q.s1_zh;qSub.style.display='none';
+      const showZhBtn=document.getElementById('show-zh-btn');
+      showZhBtn.style.display='inline-flex';
+      showZhBtn.onclick=()=>{qSub.style.display='block';showZhBtn.style.display='none';};
+    }
     renderMCQ(q,'word',w=>w.word);
     // 例句填空：自動播例句音檔
     setTimeout(()=>playAudio('s1'), 400);
-
-  }else if(mode==='spell'){
+    }else if(mode==='spell'){
     badge.className='q-badge badge-cn2en';badge.textContent='拼寫練習';
     qZh.textContent=q.chinese;qZh.style.display='block';
     if(q.pos){qSub.textContent=q.pos;qSub.style.display='block';}
@@ -698,6 +725,13 @@ function checkAns(isCorrect,btn,q){
   s1Btn.classList.remove('playing'); s1Btn.textContent = '🔊 播放例句 1';
   s2Btn.style.display = q.s2_en ? 'inline-flex' : 'none';
   s2Btn.classList.remove('playing'); s2Btn.textContent = '🔊 播放例句 2';
+  // 例句中文按鈕
+  const s1ZhRow = document.getElementById('s1-zh-row');
+  const s2ZhRow = document.getElementById('s2-zh-row');
+  if(q.s1_zh){ document.getElementById('s1-zh-text').textContent=q.s1_zh; s1ZhRow.style.display='block'; document.getElementById('s1-zh-text').style.display='none'; document.getElementById('show-s1-zh-btn').textContent='👁 看例句 1 中文'; }
+  else{ s1ZhRow.style.display='none'; }
+  if(q.s2_zh){ document.getElementById('s2-zh-text').textContent=q.s2_zh; s2ZhRow.style.display='block'; document.getElementById('s2-zh-text').style.display='none'; document.getElementById('show-s2-zh-btn').textContent='👁 看例句 2 中文'; }
+  else{ s2ZhRow.style.display='none'; }
 
   document.getElementById('next-btn').style.display='block';
 }
@@ -823,6 +857,21 @@ function renderErrorBank(){
 function removeError(word){errorBank=errorBank.filter(w=>w.word!==word);saveErrors();renderErrorBank();refreshStats();}
 function clearErrors(){if(!confirm('確定清空所有錯題？'))return;errorBank=[];saveErrors();renderErrorBank();refreshStats();}
 function saveErrors(){localStorage.setItem('toeic_errors_v2',JSON.stringify(errorBank));}
+
+// ═══════════════════════════════════════
+// Sentence ZH toggle
+// ═══════════════════════════════════════
+function toggleSentenceZh(which){
+  const textEl = document.getElementById(`s${which==='s1'?1:2}-zh-text`);
+  const btn = document.getElementById(`show-s${which==='s1'?1:2}-zh-btn`);
+  if(textEl.style.display==='none'){
+    textEl.style.display='block';
+    btn.textContent = which==='s1' ? '👁 收起例句 1 中文' : '👁 收起例句 2 中文';
+  }else{
+    textEl.style.display='none';
+    btn.textContent = which==='s1' ? '👁 看例句 1 中文' : '👁 看例句 2 中文';
+  }
+}
 
 // ═══════════════════════════════════════
 // UTIL
