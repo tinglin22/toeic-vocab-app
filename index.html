@@ -96,6 +96,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 .wi-word{font-family:var(--font-en);font-size:22px;font-weight:700;color:var(--text)}
 .wi-pos{background:rgba(59,130,246,0.15);color:var(--primary);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700}
 .wi-cn{font-size:16px;color:var(--accent);font-weight:600}
+.wi-id{font-family:var(--font-en);font-size:11px;color:var(--text-dim);background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:6px;letter-spacing:0.5px}
 .wi-divider{color:var(--border)}
 
 .q-word{font-family:var(--font-en);font-size:36px;font-weight:700;margin-bottom:8px;line-height:1.1}
@@ -266,6 +267,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 
   <!-- 答對後顯示單字資訊 -->
   <div class="word-info" id="word-info">
+    <span class="wi-id" id="wi-id"></span>
     <span class="wi-word" id="wi-word"></span>
     <span class="wi-divider">·</span>
     <span class="wi-pos" id="wi-pos"></span>
@@ -673,6 +675,7 @@ function checkAns(isCorrect,btn,q){
   const fb=document.getElementById('feedback');
 
   // 顯示單字資訊
+  document.getElementById('wi-id').textContent=q.id||'';
   document.getElementById('wi-word').textContent=q.word;
   document.getElementById('wi-pos').textContent=q.pos||'';
   document.getElementById('wi-cn').textContent=q.chinese;
