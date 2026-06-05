@@ -162,6 +162,11 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
 .streak-badge{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--gold);color:#000;font-family:var(--font-en);font-size:28px;font-weight:700;padding:12px 28px;border-radius:20px;pointer-events:none;z-index:200;opacity:0;transition:opacity 0.3s;white-space:nowrap}
 .streak-badge.show{opacity:1;animation:streakPop 0.6s ease forwards}
 @keyframes streakPop{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}30%{transform:translate(-50%,-60%) scale(1.1);opacity:1}70%{transform:translate(-50%,-60%) scale(1);opacity:1}100%{transform:translate(-50%,-80%) scale(0.9);opacity:0}}
+
+.speed-bar{display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:10px;}
+.speed-btn{padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-dim);font-size:12px;font-family:var(--font-en);font-weight:600;cursor:pointer;transition:.15s;}
+.speed-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.speed-label{font-size:11px;color:var(--text-dim);}
 </style>
 </head>
 <body>
@@ -217,6 +222,15 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
     <span id="quiz-count" style="font-family:var(--font-en);font-size:14px;color:var(--text-dim)">1/10</span>
     <span id="quiz-mode-tag" style="font-size:12px;color:var(--text-dim)"></span>
   </div>
+  <!-- 速度切換 -->
+  <div class="speed-bar" id="speed-bar" style="display:none">
+    <span class="speed-label">速度</span>
+    <button class="speed-btn" onclick="setSpeed(0.5,this)">0.5x</button>
+    <button class="speed-btn" onclick="setSpeed(0.75,this)">0.75x</button>
+    <button class="speed-btn active" onclick="setSpeed(1,this)">1x</button>
+    <button class="speed-btn" onclick="setSpeed(1.25,this)">1.25x</button>
+    <button class="speed-btn" onclick="setSpeed(1.5,this)">1.5x</button>
+  </div>
   <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
   <div class="battle-hud" id="battle-hud" style="display:none">
     <div class="hud-lives" id="hud-lives"></div>
@@ -240,28 +254,43 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
     </button>
   </div>
 
-  <!-- 例句播放按鈕（答題後顯示） -->
+  <!-- 例句播放區（答題後顯示）s1/s2/s3 -->
   <div id="sentence-audio-wrap" style="display:none; margin-bottom:12px;">
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:6px">
-      <button class="audio-btn" id="audio-s1-btn" style="display:none" onclick="playAudio('s1')">
-        🔊 播放例句 1
-      </button>
-      <button class="audio-btn" id="audio-s2-btn" style="display:none" onclick="playAudio('s2')">
-        🔊 播放例句 2
+    <!-- 重播單字 -->
+    <div id="word-replay-row" style="display:none;text-align:center;margin-bottom:8px">
+      <button class="audio-btn" id="audio-word-replay-btn" onclick="playAudio('word')" style="font-size:13px">
+        🔊 重播單字
       </button>
     </div>
-    <!-- 例句中文顯示區 -->
-    <div id="s1-zh-row" style="display:none;text-align:center">
-      <button class="audio-btn" id="show-s1-zh-btn" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px" onclick="toggleSentenceZh('s1')">
-        👁 看例句 1 中文
-      </button>
-      <div id="s1-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:6px;padding:0 16px;line-height:1.6"></div>
+    <!-- s1 -->
+    <div id="s1-block" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:6px">
+        <button class="audio-btn" id="audio-s1-btn" onclick="playAudio('s1')" style="font-size:13px">🔊 例句 1</button>
+        <button class="audio-btn" id="show-s1-en-btn" onclick="toggleSentenceText('s1','en')" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--primary);font-size:12px">👁 看英文</button>
+        <button class="audio-btn" id="show-s1-zh-btn" onclick="toggleSentenceText('s1','zh')" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px">👁 看中文</button>
+      </div>
+      <div id="s1-en-text" style="display:none;font-size:13px;color:var(--text);margin-top:4px;padding:0 4px;line-height:1.7;font-family:var(--font-en)"></div>
+      <div id="s1-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:4px;padding:0 4px;line-height:1.7"></div>
     </div>
-    <div id="s2-zh-row" style="display:none;text-align:center;margin-top:6px">
-      <button class="audio-btn" id="show-s2-zh-btn" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px" onclick="toggleSentenceZh('s2')">
-        👁 看例句 2 中文
-      </button>
-      <div id="s2-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:6px;padding:0 16px;line-height:1.6"></div>
+    <!-- s2 -->
+    <div id="s2-block" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:6px">
+        <button class="audio-btn" id="audio-s2-btn" onclick="playAudio('s2')" style="font-size:13px">🔊 例句 2</button>
+        <button class="audio-btn" id="show-s2-en-btn" onclick="toggleSentenceText('s2','en')" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--primary);font-size:12px">👁 看英文</button>
+        <button class="audio-btn" id="show-s2-zh-btn" onclick="toggleSentenceText('s2','zh')" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px">👁 看中文</button>
+      </div>
+      <div id="s2-en-text" style="display:none;font-size:13px;color:var(--text);margin-top:4px;padding:0 4px;line-height:1.7;font-family:var(--font-en)"></div>
+      <div id="s2-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:4px;padding:0 4px;line-height:1.7"></div>
+    </div>
+    <!-- s3 -->
+    <div id="s3-block" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:6px">
+        <button class="audio-btn" id="audio-s3-btn" onclick="playAudio('s3')" style="font-size:13px">🔊 例句 3</button>
+        <button class="audio-btn" id="show-s3-en-btn" onclick="toggleSentenceText('s3','en')" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:var(--primary);font-size:12px">👁 看英文</button>
+        <button class="audio-btn" id="show-s3-zh-btn" onclick="toggleSentenceText('s3','zh')" style="background:rgba(255,214,10,0.1);border-color:rgba(255,214,10,0.25);color:var(--gold);font-size:12px">👁 看中文</button>
+      </div>
+      <div id="s3-en-text" style="display:none;font-size:13px;color:var(--text);margin-top:4px;padding:0 4px;line-height:1.7;font-family:var(--font-en)"></div>
+      <div id="s3-zh-text" style="display:none;font-size:13px;color:var(--text-dim);margin-top:4px;padding:0 4px;line-height:1.7"></div>
     </div>
   </div>
 
@@ -399,6 +428,8 @@ async function loadData(){
       s1_zh:    r[idx['sentence1_zh']]||'',
       s2_en:    r[idx['sentence2_en']]||'',
       s2_zh:    r[idx['sentence2_zh']]||'',
+      s3_en:    r[idx['sentence3_en']]||'',
+      s3_zh:    r[idx['sentence3_zh']]||'',
       difficulty:r[idx['difficulty']]||'',
       notes:    r[idx['notes']]||'',
     })).filter(w=>w.word&&w.chinese);
@@ -486,7 +517,7 @@ function renderBattleSettings(){
 // AUDIO
 // ═══════════════════════════════════════
 function getAudioUrl(word_id, safe_word, type){
-  // type: 'word' | 's1' | 's2'
+  // type: 'word' | 's1' | 's2' | 's3'
   return `${AUDIO_BASE}${word_id}_${safe_word}_${type}.mp3`;
 }
 
@@ -494,41 +525,62 @@ function safeFileName(str){
   return str.toLowerCase().replace(/[^a-z0-9_\-]/g,'').replace(/\s+/g,'_');
 }
 
+let audioPlaybackRate = 1.0;
+
+function setSpeed(rate, el){
+  audioPlaybackRate = rate;
+  document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(currentAudio) currentAudio.playbackRate = rate;
+}
+
 function playAudio(type){
   if(!currentQ)return;
 
-  // 找對應的按鈕
-  let btn;
-  if(type==='word') btn=document.getElementById('audio-play-btn');
-  else if(type==='s1') btn=document.getElementById('audio-s1-btn');
-  else if(type==='s2') btn=document.getElementById('audio-s2-btn');
+  // 找對應按鈕
+  const btnMap = {
+    word: document.getElementById('audio-play-btn') || document.getElementById('audio-word-replay-btn'),
+    s1:   document.getElementById('audio-s1-btn'),
+    s2:   document.getElementById('audio-s2-btn'),
+    s3:   document.getElementById('audio-s3-btn'),
+  };
+  // 也嘗試重播按鈕
+  if(type==='word'){
+    const replayBtn = document.getElementById('audio-word-replay-btn');
+    const mainBtn   = document.getElementById('audio-play-btn');
+    btnMap.word = (mainBtn && mainBtn.style.display!=='none') ? mainBtn : replayBtn;
+  }
+  const btn = btnMap[type];
 
   const safeId=currentQ.id.replace(/[^a-zA-Z0-9_\-]/g,'');
   const safeWord=safeFileName(currentQ.word);
   const url=getAudioUrl(safeId, safeWord, type);
 
   if(currentAudio){currentAudio.pause();currentAudio=null;}
+  // 清掉所有播放中狀態
+  document.querySelectorAll('.audio-btn.playing').forEach(b=>{
+    b.classList.remove('playing');
+    const t=b.dataset.origText;
+    if(t) b.textContent=t;
+  });
+
   currentAudio=new Audio(url);
+  currentAudio.playbackRate = audioPlaybackRate;
+
+  const labelMap = {word:'🔊 重播單字', s1:'🔊 例句 1', s2:'🔊 例句 2', s3:'🔊 例句 3'};
 
   if(btn){
+    btn.dataset.origText = btn.textContent;
     btn.classList.add('playing');
-    btn.textContent='🔊 播放中...';
+    btn.textContent='⏸ 播放中...';
   }
 
   currentAudio.play().catch(e=>{
-    if(btn){
-      btn.classList.remove('playing');
-      btn.textContent = type==='word' ? '🔊 播放單字音檔' :
-                        type==='s1'   ? '🔊 播放例句 1' : '🔊 播放例句 2';
-    }
+    if(btn){ btn.classList.remove('playing'); btn.textContent=btn.dataset.origText||labelMap[type]||'🔊'; }
     console.warn('Audio play failed:', url, e);
   });
   currentAudio.onended=()=>{
-    if(btn){
-      btn.classList.remove('playing');
-      btn.textContent = type==='word' ? '🔊 再播一次' :
-                        type==='s1'   ? '🔊 再播例句 1' : '🔊 再播例句 2';
-    }
+    if(btn){ btn.classList.remove('playing'); btn.textContent=labelMap[type]||'🔊'; }
   };
 }
 
@@ -583,11 +635,24 @@ function renderQ(){
   document.getElementById('q-sentence').style.display='none';
   document.getElementById('audio-play-btn').style.display='none';
   document.getElementById('show-zh-btn').style.display='none';
+  ['s1','s2','s3'].forEach(s=>{
+    const enBtn=document.getElementById(`show-${s}-en-btn`);
+    const zhBtn=document.getElementById(`show-${s}-zh-btn`);
+    if(enBtn){enBtn.style.display='inline-flex';enBtn.textContent='👁 看英文';}
+    if(zhBtn){zhBtn.style.display='inline-flex';zhBtn.textContent='👁 看中文';}
+  });
   document.getElementById('sentence-audio-wrap').style.display='none';
-  document.getElementById('audio-s1-btn').style.display='none';
-  document.getElementById('audio-s2-btn').style.display='none';
-  document.getElementById('s1-zh-row').style.display='none';
-  document.getElementById('s2-zh-row').style.display='none';
+  document.getElementById('s1-block').style.display='none';
+  document.getElementById('s2-block').style.display='none';
+  document.getElementById('s3-block').style.display='none';
+  document.getElementById('word-replay-row').style.display='none';
+  document.getElementById('s1-en-text').style.display='none';
+  document.getElementById('s1-zh-text').style.display='none';
+  document.getElementById('s2-en-text').style.display='none';
+  document.getElementById('s2-zh-text').style.display='none';
+  document.getElementById('s3-en-text').style.display='none';
+  document.getElementById('s3-zh-text').style.display='none';
+  document.getElementById('speed-bar').style.display='flex';
   document.getElementById('word-info').className='word-info';
   document.getElementById('tip-box').className='tip-box';
   const spellInput=document.getElementById('spell-input');
@@ -610,6 +675,7 @@ function renderQ(){
     badge.className='q-badge badge-cn2en';badge.textContent='中翻英';
     qZh.textContent=q.chinese;qZh.style.display='block';
     if(q.pos){qSub.textContent=q.pos;qSub.style.display='block';}
+    audioBtn.style.display='inline-flex';audioBtn.classList.remove('playing');audioBtn.textContent='🔊 播放單字';
     renderMCQ(q,'en',w=>w.word);
 
   }else if(mode==='audio'){
@@ -642,6 +708,7 @@ function renderQ(){
     badge.className='q-badge badge-cn2en';badge.textContent='拼寫練習';
     qZh.textContent=q.chinese;qZh.style.display='block';
     if(q.pos){qSub.textContent=q.pos;qSub.style.display='block';}
+    audioBtn.style.display='inline-flex'; audioBtn.classList.remove('playing'); audioBtn.textContent='🔊 播放單字';
     document.getElementById('opts').style.display='none';
     document.getElementById('spell-wrap').style.display='block';
     setTimeout(()=>spellInput.focus(),200);
@@ -719,22 +786,28 @@ function checkAns(isCorrect,btn,q){
     fb.style.display='block';
     if(battleMode==='life'){lives--;updateBattleHUD();if(lives<=0){setTimeout(gameOver,800);return;}}
   }
-  // 顯示例句播放按鈕
-  const sentWrap = document.getElementById('sentence-audio-wrap');
-  const s1Btn = document.getElementById('audio-s1-btn');
-  const s2Btn = document.getElementById('audio-s2-btn');
-  sentWrap.style.display = 'block';
-  s1Btn.style.display = q.s1_en ? 'inline-flex' : 'none';
-  s1Btn.classList.remove('playing'); s1Btn.textContent = '🔊 播放例句 1';
-  s2Btn.style.display = q.s2_en ? 'inline-flex' : 'none';
-  s2Btn.classList.remove('playing'); s2Btn.textContent = '🔊 播放例句 2';
-  // 例句中文按鈕
-  const s1ZhRow = document.getElementById('s1-zh-row');
-  const s2ZhRow = document.getElementById('s2-zh-row');
-  if(q.s1_zh){ document.getElementById('s1-zh-text').textContent=q.s1_zh; s1ZhRow.style.display='block'; document.getElementById('s1-zh-text').style.display='none'; document.getElementById('show-s1-zh-btn').textContent='👁 看例句 1 中文'; }
-  else{ s1ZhRow.style.display='none'; }
-  if(q.s2_zh){ document.getElementById('s2-zh-text').textContent=q.s2_zh; s2ZhRow.style.display='block'; document.getElementById('s2-zh-text').style.display='none'; document.getElementById('show-s2-zh-btn').textContent='👁 看例句 2 中文'; }
-  else{ s2ZhRow.style.display='none'; }
+  // 顯示例句區 + 重播單字
+  document.getElementById('sentence-audio-wrap').style.display='block';
+  document.getElementById('word-replay-row').style.display='block';
+  document.getElementById('audio-word-replay-btn').classList.remove('playing');
+  document.getElementById('audio-word-replay-btn').textContent='🔊 重播單字';
+
+  function setupSBlock(n, en, zh){
+    const block=document.getElementById(`s${n}-block`);
+    if(!en && !zh){ block.style.display='none'; return; }
+    block.style.display='block';
+    const aBtn=document.getElementById(`audio-s${n}-btn`);
+    aBtn.classList.remove('playing'); aBtn.textContent=`🔊 例句 ${n}`;
+    const enEl=document.getElementById(`s${n}-en-text`);
+    const zhEl=document.getElementById(`s${n}-zh-text`);
+    if(en){ enEl.textContent=en; enEl.style.display='none'; document.getElementById(`show-s${n}-en-btn`).textContent='👁 看英文'; }
+    else{ document.getElementById(`show-s${n}-en-btn`).style.display='none'; }
+    if(zh){ zhEl.textContent=zh; zhEl.style.display='none'; document.getElementById(`show-s${n}-zh-btn`).textContent='👁 看中文'; }
+    else{ document.getElementById(`show-s${n}-zh-btn`).style.display='none'; }
+  }
+  setupSBlock(1, q.s1_en, q.s1_zh);
+  setupSBlock(2, q.s2_en, q.s2_zh);
+  setupSBlock(3, q.s3_en||'', q.s3_zh||'');
 
   document.getElementById('next-btn').style.display='block';
 }
@@ -864,15 +937,16 @@ function saveErrors(){localStorage.setItem('toeic_errors_v2',JSON.stringify(erro
 // ═══════════════════════════════════════
 // Sentence ZH toggle
 // ═══════════════════════════════════════
-function toggleSentenceZh(which){
-  const textEl = document.getElementById(`s${which==='s1'?1:2}-zh-text`);
-  const btn = document.getElementById(`show-s${which==='s1'?1:2}-zh-btn`);
-  if(textEl.style.display==='none'){
-    textEl.style.display='block';
-    btn.textContent = which==='s1' ? '👁 收起例句 1 中文' : '👁 收起例句 2 中文';
+function toggleSentenceText(sNum, lang){
+  const el = document.getElementById(`s${sNum}-${lang}-text`);
+  const btn = document.getElementById(`show-s${sNum}-${lang}-btn`);
+  if(!el||!btn) return;
+  if(el.style.display==='none'){
+    el.style.display='block';
+    btn.textContent = lang==='en' ? '🙈 收起英文' : '🙈 收起中文';
   }else{
-    textEl.style.display='none';
-    btn.textContent = which==='s1' ? '👁 看例句 1 中文' : '👁 看例句 2 中文';
+    el.style.display='none';
+    btn.textContent = lang==='en' ? '👁 看英文' : '👁 看中文';
   }
 }
 
