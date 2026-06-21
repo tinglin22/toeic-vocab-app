@@ -937,9 +937,9 @@ function saveErrors(){localStorage.setItem('toeic_errors_v2',JSON.stringify(erro
 // ═══════════════════════════════════════
 // Sentence ZH toggle
 // ═══════════════════════════════════════
-function toggleSentenceText(sNum, lang){
-  const el = document.getElementById(`s${sNum}-${lang}-text`);
-  const btn = document.getElementById(`show-s${sNum}-${lang}-btn`);
+function toggleSentenceText(sKey, lang){
+  const el = document.getElementById(`${sKey}-${lang}-text`);
+  const btn = document.getElementById(`show-${sKey}-${lang}-btn`);
   if(!el||!btn) return;
   if(el.style.display==='none'){
     el.style.display='block';
