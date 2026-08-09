@@ -193,6 +193,13 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
       <div class="day-scroll" id="day-scroll"></div>
     </div>
     <div class="mode-section">
+      <div class="sec-title">出題順序</div>
+      <div class="mode-grid" style="grid-template-columns:1fr 1fr">
+        <div class="mode-pill active" data-order="random" onclick="setOrderMode(this)"><span class="pill-icon">🔀</span><div><span class="label">隨機出題</span><span class="sub">打亂順序</span></div></div>
+        <div class="mode-pill" data-order="sequential" onclick="setOrderMode(this)"><span class="pill-icon">📋</span><div><span class="label">依序出題</span><span class="sub">按 Day 順序</span></div></div>
+      </div>
+    </div>
+    <div class="mode-section">
       <div class="sec-title">測驗題型 <span style="color:var(--primary);font-size:10px">(可多選)</span></div>
       <div class="mode-grid">
         <div class="mode-pill active" data-mode="en2cn" onclick="toggleMode(this)"><span class="pill-icon">🇺🇸</span><div><span class="label">英翻中</span><span class="sub">看英文選中文</span></div></div>
@@ -375,6 +382,7 @@ let allWords=[], sessionWords=[], qIdx=0, score=0, wrongInSession=[];
 let currentStreak=0, maxStreak=0;
 let selectedDays=new Set(['ALL']);
 let selectedModes=new Set(['en2cn','cn2en']);
+let quizOrder='random';
 let battleMode='life';
 let lives=3, maxLives=3;
 let timerSec=30, timerInterval=null;
@@ -497,6 +505,12 @@ function toggleMode(el){
   if(selectedModes.size===0){el.classList.add('active');selectedModes.add(mode);}
 }
 
+function setOrderMode(el){
+  quizOrder=el.dataset.order;
+  el.parentElement.querySelectorAll('.mode-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+
 function selectBattle(el){
   document.querySelectorAll('.battle-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');battleMode=el.dataset.battle;renderBattleSettings();
@@ -592,7 +606,8 @@ function startQuiz(words_override){
   if(pool.length===0){alert('沒有符合條件的單字！');return;}
   if(selectedModes.size===0){alert('請至少選擇一種題型！');return;}
 
-  sessionWords=shuffle([...pool]).map(w=>{
+  const orderedPool = quizOrder==='sequential' ? [...pool] : shuffle([...pool]);
+  sessionWords=orderedPool.map(w=>{
     const available=[...selectedModes].filter(m=>{
       if(m==='fill')return!!w.s1_en;
       if(m==='audio')return!!w.id;
